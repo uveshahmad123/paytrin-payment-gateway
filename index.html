@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Paytring Payment Gateway</title>
     <script src="https://cdn.paytring.com/js/checkout/iframe.v1.2.0.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
 </head>
 
 <body>
@@ -18,6 +19,42 @@
         async function initializePayment() {
             try {
                 console.log("Hit the API")
+                let params = {
+                    amount: 2000,
+                    currency: 'INR',
+                    callback_url: 'http://localhost:8083/api/callback',
+                    cname: 'Uvesh Ahmed',
+                    email: 'uveshahmad30@gmail.com',
+                    key: 'test_123',
+                    phone: '9319357641',
+                    receipt_id: 'xx13492',
+                    notes:{
+                        udf1:"udf1",
+                        udf2:"udf2"
+                    }
+                    
+                }
+
+                // Step 1 : Sort the object
+                let sorted_params = Object.keys(params).sort().reduce((accumulator, key) => {
+                    accumulator[key] = params[key]
+                    return accumulator;
+                }, {});
+                // Step 2 : Join all Sting Values with |
+                let value_string = "";
+                let allValues = Object.values(sorted_params);
+                for (let i = 0; i < allValues.length; i++) {
+                    if (typeof allValues[i] != "object") {
+                        value_string += allValues[i] + "|";
+                    }
+                }
+                // Step 3: Append key secret.
+                value_string += "API_SECRET"
+                // Step 4 : Create hash and add to the params
+                const hash = CryptoJS.SHA512(value_string).toString();
+                params["hash"] = hash;
+
+                console.log(params , "hash")
                 // Replace this with your backend API call to create an order
                 const response = await fetch('https://api.paytring.com/api/v2/order/create/', {
                     method: 'POST',
@@ -26,19 +63,7 @@
                         'content-type': 'application/json',
                         authorization: 'Basic dGVzdF9rZXk6dGVzdF9zZWNyZXQ='
                     },
-                    body: JSON.stringify({
-                        key: 'test_123',
-                        amount: 2000,
-                        cname: 'Uvesh Ahmed',
-                        phone: '9319357641',
-                        receipt_id: 'xx14562',
-                        callback_url: 'https://paytrin-payment-gateway.onrender.com/api/callback',
-                        currency: 'INR',
-                        split_type: 'percent',
-                        autocapture: 'true',
-                        hash: 'uveshahmad',
-                        email: 'uveshahmad30@gmail.com'
-                    })
+                    body: JSON.stringify(params)
                 });
 
                 const data = await response.json();
